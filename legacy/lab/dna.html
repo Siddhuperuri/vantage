@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DNA - the signature, at several stages of being drawn</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html,body{margin:0;background:#0a0908;color:#e9e2d3;font:12px/1.4 ui-monospace,Consolas,monospace}
+  main{padding:24px}
+  h2{font-weight:400;letter-spacing:.2em;font-size:11px;opacity:.5;margin:20px 0 8px}
+  canvas{display:block;background:#0a0908;max-width:100%}
+</style>
+</head>
+<body>
+<main>
+  <h2>ONE LAYER, THEN TWO, THEN ALL FIVE (the shape is still one loop) - THEN THE SHAPE GROWS - THEN IT MUTATES</h2>
+  <canvas id="c" width="1800" height="900"></canvas>
+</main>
+<script src="../js/core.js"></script>
+<script src="../js/dna.js"></script>
+<script>
+/* The signature is a path (dna.js: DNA.sample), and it is drawn here the way the bottom of the well draws it: five renderings of one figure,
+   each switched on by one locus (instrument, design, lattice, field, trace). The shape loci (curiosity, ideas, balance, memory) and mutation change the path. */
+(function(){
+  var D = SID.DNA, cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0a0908'; ctx.fillRect(0, 0, cv.width, cv.height);
+  var PAPER = '233,226,211';
+  function draw(cx, cy, r, L, asp) {
+    var N = 1100, n = D.sample(N, 1), px = D.px, py = D.py, i, ax = 1, ay = asp;
+    function X(k, j) { return cx + (px[k] * r + (j || 0)) * ax; }
+    function Y(k, j) { return cy - (py[k] * r + (j || 0)) * ay; }
+    ctx.lineWidth = 1; ctx.lineCap = 'round';
+    if (L[0] > 0.05) {                                              /* instrument: the frame it is drawn in, and ticks along its way */
+      ctx.strokeStyle = 'rgba(' + PAPER + ',' + (0.45 * L[0]).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(cx, cy, r * 1.02 * ax, r * 1.02 * ay, 0, 0, 6.2832); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - r * 1.06, cy); ctx.lineTo(cx + r * 1.06, cy); ctx.moveTo(cx, cy - r * 1.06 * ay); ctx.lineTo(cx, cy + r * 1.06 * ay); ctx.stroke();
+      ctx.beginPath();
+      for (i = 6; i < n; i += 22) { var ux = px[i] - px[i - 1], uy = py[i] - py[i - 1], ul = Math.sqrt(ux * ux + uy * uy) || 1; ux /= ul; uy /= ul; ctx.moveTo(X(i) - uy * 5, Y(i) - ux * 5 * ay); ctx.lineTo(X(i) + uy * 5, Y(i) + ux * 5 * ay); }
+      ctx.stroke();
+    }
+    if (L[1] > 0.05) {                                              /* design: the exact line */
+      ctx.strokeStyle = 'rgba(' + PAPER + ',' + (0.9 * L[1]).toFixed(2) + ')'; ctx.beginPath();
+      for (i = 0; i < n; i++) i ? ctx.lineTo(X(i), Y(i)) : ctx.moveTo(X(i), Y(i)); ctx.stroke();
+    }
+    if (L[2] > 0.05) {                                              /* lattice: the same line quantised into cells */
+      ctx.fillStyle = 'rgba(' + PAPER + ',' + (0.8 * L[2]).toFixed(2) + ')'; var lq = -9, lr = -9;
+      for (i = 0; i < n; i++) { var qx = Math.round(px[i] / 0.036), qy = Math.round(py[i] / 0.036); if (qx === lq && qy === lr) continue; lq = qx; lr = qy; ctx.fillRect(X(i) - 1.5 + (qx * 0.036 - px[i]) * r, Y(i) - 1.5, 3, 3); }
+    }
+    if (L[3] > 0.05) {                                              /* field: dust that collects onto it */
+      ctx.fillStyle = 'rgba(' + PAPER + ',' + (0.7 * L[3]).toFixed(2) + ')';
+      for (i = 0; i < n; i += 2) { var g1 = (SID.M.hash(i, 3, 5, 91) * 2 - 1) * 5, g2 = (SID.M.hash(i, 4, 6, 91) * 2 - 1) * 5; ctx.fillRect(X(i, g1) - 0.7, Y(i, g2) - 0.7, 1.4, 1.4); }
+    }
+    if (L[4] > 0.05) {                                              /* trace: a second, looser pass of a hand */
+      ctx.strokeStyle = 'rgba(' + PAPER + ',' + (0.6 * L[4]).toFixed(2) + ')'; ctx.beginPath();
+      for (i = 0; i < n; i += 3) { var wx = SID.M.noise(i * 0.05, 1, 2, 12) * 4, wy = SID.M.noise(i * 0.05, 2, 2, 13) * 4; i ? ctx.lineTo(X(i, wx), Y(i, wy)) : ctx.moveTo(X(i, wx), Y(i, wy)); }
+      ctx.stroke();
+    }
+  }
+  /* S: curiosity, ideas, balance, memory */
+  var stages = [
+    { L: [0.5, 0, 0, 0, 0], S: [0, 0, 0, 0] },
+    { L: [1, 1, 0, 0, 0], S: [0, 0, 0, 0] },
+    { L: [1, 1, 1, 1, 1], S: [0.15, 0.1, 0.1, 0.1] },
+    { L: [1, 1, 1, 1, 1], S: [0.5, 0.4, 0.5, 0.4] },
+    { L: [1, 1, 1, 1, 1], S: [1, 0.8, 0.8, 0.8] },
+    { L: [1, 1, 1, 1, 1], S: [1, 0.8, 0.8, 0.8], mut: 1 }
+  ];
+  var W = 300, H = 300, r = 118;
+  for (var row = 0; row < 3; row++) {
+    stages.forEach(function (s, i) {
+      D.load([s.L[0], s.L[1], s.L[2], s.L[3], s.L[4], s.S[0], s.S[1], s.S[2], s.S[3], s.mut || 0]);
+      D.seed(0.13 + row * 0.31);
+      D.update(1, 5);
+      D.st.phase = row * 0.4;
+      draw(150 + i * W, 150 + row * H, row === 2 ? r * 1.15 : r, s.L, row === 2 ? 0.42 : 1);
+    });
+  }
+})();
+</script>
+</body>
+</html>

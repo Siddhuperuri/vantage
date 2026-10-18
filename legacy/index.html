@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIDDHARTHA</title>
+<meta name="description" content="An interactive artwork about a person. It only resolves if you stop.">
+<meta name="theme-color" content="#0a0908">
+<meta property="og:title" content="SIDDHARTHA">
+<meta property="og:description" content="An interactive artwork about a person. It only resolves if you stop.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0908'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23ff5c24'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="is-booting" data-act="unknown">
+
+<!-- scroll is the timeline; the stage is fixed -->
+<div id="track" aria-hidden="true"></div>
+<!-- the descent: no height at all until the piece has been finished once (see js/deep.js) -->
+<div id="deep" aria-hidden="true"></div>
+
+<main id="stage">
+  <!-- what the piece is, for anyone who cannot see it: inside the main landmark, hidden from sight only -->
+<h1 class="sr">Siddhartha</h1>
+<p class="sr">An interactive artwork about a person, Peruri Jai Sai Siddhartha. The name is built from five layers of light floating at different depths. You never see him directly, only what passes through him: it becomes legible only from one point of view, and only if you hold still. Scroll to travel through it. Move the pointer to disturb it; stop to let it resolve.</p>
+<p class="sr">The second half is the inside of the name: a wall of words wrapped around you, a crossword whose spine is the name, where each concept crosses another through a shared letter. Concepts include AI, design, code, camera, web, motion, 3D, games, ideas, experiments and curiosity, held between five contradictions: design and technology, intuition and systems, art and code, curiosity and structure, imagination and engineering. Letters become clearer the longer you rest your attention on them, and opposing words recoil from one another. Stiff concepts hold their letters in place; loose ones let them sway. Behind some letters are memories. They appear only when you choose one: click the letter, or tap it, or Tab to it; then scroll, and it enlarges. Scrolling with nothing chosen does not move the view. Click elsewhere to let go. Use the arrow keys to look around, Tab to move between doors, Enter to go through the one you chose, and Escape to step back. On a touch screen, drag to turn, tap a letter to attend to it or to choose it, and scroll to go in.</p>
+<p class="sr">One door, in the letter O of the word motion, says not yet. It closes when it is looked at. If you press and hold on it, or focus it with Tab and hold Enter, it opens; the whole wall then separates into its layers, and the piece remembers this on your next visit. Nothing is ever sent anywhere. The piece keeps one small record on this device: which doors opened, and the shape of the pointer's path. It fades a little each time it is read.</p>
+<p class="sr">Scrolling in the wall, with no door chosen, lifts you to the top of the room, where fifteen rings circle at the wall's radius, one for each tool named in the record (Figma, Framer, Illustrator, Photoshop, Canva, Lightroom, HTML, CSS, JavaScript, React, Python, Java, PyTorch, WebGL, GSAP). Rest your attention on a concept and the rings of the tools it is made with light up, with the tool's name above the concept. Concepts with no tool named for them, such as curiosity or intuition, have nothing above them. Staying with a concept makes it act on the room: curiosity asks questions in the empty cells, structure measures a word, systems draws the springs that hold the wall together, imagination lifts its letters, and so on. Five of the empty cells each hold something small, found by resting on them. Looking straight up from the top, and staying, shows one more line: how the piece is made.</p>
+<p class="sr">The last part is the edge of the piece. The wall goes back to being a draft, each gap between two opposites is asked a question in ember, and then the letters of the wall gather into one sentence: jack of all, master of none, but often times better than master of one. A wish follows: may the odds be ever in your favour. Then the sentence lets go, and the ember draws your own path. It then says only what is true of your visit, and ends: you know a little about me, I know nothing about you, good. Scroll back up to return to the wall.</p>
+<p class="sr">The ending is not the end. When the wish is written, waiting, or scrolling on, lets the floor go, and the page grows: below the room is a well, and its depth is the fourth part of the scroll. It is the wall's own grid continued downward, with the row number shown at the bottom right. Falling through it you pass nineteen drawings, one for each artefact listed under his work, hung at different heights and distances: Cosmos Engine, Travelease, Petponks, Vigil-88 and the visual design collection, and, drawn dashed and never resolving, the parts of Orbit and Spectra that the record says do not exist yet. Each resolves as you rest attention on it; hold a press or the Enter key on one and it comes toward you and opens into its layers. Pieces of one work are joined by a survey line once two are resolved. Six small letters, the ones the wall never held, are hidden near the axis. Below them hang three drawing sheets, for origin, failures and evolution, where the record holds nothing; they show only what is true: the four words of the name, the times the name came apart in front of the visitor, and the figure this visit and the last one drew. Beneath them, one ring for each visit is laid round the wall with the path the pointer made in it. At the bottom, below you, five sheets of light add up to the signature the visit grew, and behind you a field of dust is empty exactly where the name would be. The last words appear there. If you stay, everything goes dark except a beam that goes where you point.</p>
+
+  <canvas id="world" role="img" aria-label="Layers of light that assemble into the name SIDDHARTHA"></canvas>
+  <canvas id="bloom" aria-hidden="true"></canvas>
+  <div id="grain" aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <div id="ui">
+    <div id="frame" aria-hidden="true">
+      <i class="mark tl"></i><i class="mark tr"></i><i class="mark bl"></i><i class="mark br"></i>
+    </div>
+    <div id="rw" aria-hidden="true"><div id="ruler"><i id="ruler-pin"></i></div></div>
+    <div id="gauge" class="cap" aria-hidden="true"></div>
+    <div id="cap-l" class="cap"></div>
+    <div id="verb" class="verb"></div>
+    <div id="whisper" class="whisper" role="status" aria-live="polite"></div>
+    <div id="asks" class="asks"></div>
+    <div id="inscr" class="inscr"></div>
+    <div id="live" class="sr" role="status" aria-live="polite"></div>
+    <div id="thread" aria-hidden="true"></div>
+    <canvas id="arc3d" aria-hidden="true"></canvas>
+  </div>
+</main>
+
+<noscript>
+  <div class="noscript">SIDDHARTHA<small>This piece needs JavaScript. It is made of nothing else.</small></div>
+</noscript>
+
+<script src="js/core.js"></script>
+<script src="js/visit.js"></script>
+<script src="js/glyphs.js"></script>
+<script src="js/dna.js"></script>
+<script src="js/trace.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/world.js"></script>
+<script src="js/seeker.js"></script>
+<script src="js/render.js"></script>
+<script src="js/mind-data.js"></script>
+<script src="js/artifacts.js"></script>
+<script src="js/deep-data.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/memories.js"></script>
+<script src="js/letters.js"></script>
+<script src="js/mind.js"></script>
+<script src="js/ledger.js"></script>
+<script src="js/reactions.js"></script>
+<script src="js/edge.js"></script>
+<script src="js/deep.js"></script>
+<script src="js/strata.js"></script>
+<script src="js/chamber.js"></script>
+<script src="js/director.js"></script>
+<!-- Three.js: vendored locally (classic global build, no ES modules, no network at runtime), and used
+     nowhere except js/archive3d.js. If either fails to load the piece is unaffected: see that file. -->
+<script src="js/vendor/three.min.js"></script>
+<script src="js/archive3d.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

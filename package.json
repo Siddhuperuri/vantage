@@ -1,0 +1,33 @@
+{
+  "name": "miracle-spatial",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MIRACLE SPATIAL - VANTAGE. An explorable digital artwork. Radiolucence: a person expressed only as what passes through them.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false",
+    "test": "vitest run",
+    "test:e2e": "playwright test --project=vantage --project=production",
+    "test:perf": "playwright test --project=perf"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

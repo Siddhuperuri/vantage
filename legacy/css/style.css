@@ -1,0 +1,118 @@
+/* ------------------------------------------------------------------
+   style.css  -  the frame around the light.
+   The palette has three members: ground, paper, ember. Paper is the
+   only text colour. Ember is reserved for the one thing that is curious.
+   ------------------------------------------------------------------ */
+:root {
+  --ground: #0a0908;
+  --paper: #e9e2d3;
+  --paper-72: rgba(233, 226, 211, .72);
+  --paper-40: rgba(233, 226, 211, .40);
+  --paper-18: rgba(233, 226, 211, .18);
+  --paper-08: rgba(233, 226, 211, .08);
+  --ember: #ff5c24;
+  --gut: clamp(14px, 2.4vw, 34px);
+  /* the frame keeps clear of notches and rounded corners */
+  --gt: max(var(--gut), env(safe-area-inset-top, 0px)); --gr: max(var(--gut), env(safe-area-inset-right, 0px));
+  --gb: max(var(--gut), env(safe-area-inset-bottom, 0px)); --gl: max(var(--gut), env(safe-area-inset-left, 0px));
+  --micro: clamp(9px, .5vw + 5.5px, 12px);   /* height of the micro-type, in px */
+  --ease: cubic-bezier(.2, .7, .1, 1);
+  /* one column of scroll, two halves: the name, and the inside of the name.
+     main.js reads --m1 and --m2 to know where one ends and the other begins. */
+  --m1: 1000vh;
+  --m2: 600vh;
+  --m3: 300vh;
+  --track: calc(var(--m1) + var(--m2) + var(--m3));
+  /* and a fourth that does not exist until the piece has been finished once: the way down (js/deep.js sets #deep's height) */
+  --m4: 2400vh;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--ground); scrollbar-width: none; -webkit-text-size-adjust: 100%; }
+html::-webkit-scrollbar { display: none; }
+body {
+  margin: 0; background: var(--ground); color: var(--paper);
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* the timeline is a tall, empty column: native scroll = native accessibility */
+#track { height: var(--track); pointer-events: none; }
+#deep { height: 0; pointer-events: none; }
+
+#stage { position: fixed; inset: 0; height: 100vh; height: 100dvh; overflow: hidden; background: var(--ground); touch-action: pan-y; cursor: crosshair; }
+body.at-edge #stage { cursor: default; }        /* at the edge the pointer is only a pointer */
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* bloom: a 1/5-resolution copy of the frame, softened and screened back by the compositor */
+#bloom { mix-blend-mode: screen; filter: blur(9px) saturate(1.15); opacity: 0; }   /* opacity is driven per frame (see main.js) */
+
+/* film grain: a procedural tile (see main.js), stepped like frames, never smooth */
+#grain {
+  position: absolute; inset: -60px; pointer-events: none; opacity: .13; mix-blend-mode: overlay;
+  background-size: 180px 180px;
+  animation: grain 1.1s steps(1) infinite;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); } 12% { transform: translate(-31px, 14px); } 25% { transform: translate(22px, -37px); }
+  37% { transform: translate(-14px, 41px); } 50% { transform: translate(38px, 9px); } 62% { transform: translate(-42px, -18px); }
+  75% { transform: translate(11px, 33px); } 87% { transform: translate(-27px, -40px); } 100% { transform: translate(0, 0); }
+}
+#vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 120% 100% at 50% 50%, transparent 55%, rgba(0, 0, 0, .55) 100%); }
+
+/* ---------- the frame: crop marks, an edge ruler, whispers ---------- */
+#ui { position: absolute; inset: 0; pointer-events: none; }
+#frame, #rw { position: absolute; inset: 0; }     /* the marks fade away at the edge of the piece (see edge.js); the ruler comes back for the descent (see deep.js) */
+.mark { position: absolute; width: 13px; height: 13px; border: 0 solid var(--paper-40); opacity: 0; transition: opacity 2.4s var(--ease) 2s; }
+body:not(.is-booting) .mark { opacity: .85; }
+.mark.tl { top: var(--gt); left: var(--gl); border-top-width: 1px; border-left-width: 1px; }
+.mark.tr { top: var(--gt); right: var(--gr); border-top-width: 1px; border-right-width: 1px; }
+.mark.bl { bottom: var(--gb); left: var(--gl); border-bottom-width: 1px; border-left-width: 1px; }
+.mark.br { bottom: var(--gb); right: var(--gr); border-bottom-width: 1px; border-right-width: 1px; }
+
+#ruler {
+  position: absolute; right: calc(var(--gr) + 1px); top: 48px; bottom: 48px; width: 9px; opacity: 0; transition: opacity 3s var(--ease) 3s;
+  background:
+    repeating-linear-gradient(to bottom, var(--paper-18) 0 1px, transparent 1px 8px) right / 4px 100% no-repeat,
+    repeating-linear-gradient(to bottom, var(--paper-40) 0 1px, transparent 1px calc(100% / 5 - .2px)) right / 9px 100% no-repeat;
+}
+body:not(.is-booting) #ruler { opacity: .9; }
+#ruler-pin { position: absolute; right: 0; top: 48px; width: 13px; height: 1px; margin-top: -48px; background: var(--ember); box-shadow: 0 0 6px rgba(255, 92, 36, .8); will-change: transform; }
+
+.cap, .verb, .whisper, .asks, .inscr { position: absolute; opacity: 0; will-change: opacity; }
+#gauge { right: calc(var(--gr) + 24px); bottom: calc(var(--gb) + 2px); }
+.inscr { left: 0; top: 0; display: grid; gap: calc(var(--micro) * .7); }
+/* the archive's held drawing, in genuine depth (js/archive3d.js): a WebGL canvas tracking the same
+   projected position a 2D memory window would, so it reads as the same object with more dimensions,
+   not a separate demo. Absent entirely if that file or WebGL is unavailable. */
+#arc3d { position: absolute; left: 0; top: 0; transform-origin: 0 0; opacity: 0; will-change: transform, opacity; }
+.inscr > div:nth-child(2) svg.gl { opacity: .6; }
+.cap { bottom: calc(var(--gb) + 2px); }
+#cap-l { left: calc(var(--gl) + 26px); }
+.verb { left: 0; right: 0; bottom: calc(var(--gb) + 2px); display: flex; justify-content: center; }
+.whisper { left: 0; right: 0; bottom: 18%; display: flex; justify-content: center; }
+.asks { left: 0; top: 0; }
+
+svg.gl { display: block; height: var(--micro); width: auto; fill: none; stroke: var(--paper); stroke-width: 1; stroke-linecap: butt; stroke-linejoin: miter; overflow: visible; }
+svg.gl path { vector-effect: non-scaling-stroke; }
+.whisper svg.gl { height: calc(var(--micro) * 1.25); }
+
+/* a thread that lengthens and fades: the only invitation to scroll */
+#thread { position: absolute; left: 50%; bottom: 0; width: 1px; height: 42px; background: linear-gradient(to top, var(--paper-40), transparent); opacity: 0; transform-origin: bottom; animation: thread 4.2s var(--ease) infinite; }
+@keyframes thread { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+.noscript { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; background: var(--ground); color: var(--paper); font-size: clamp(28px, 8vw, 96px); letter-spacing: .3em; }
+.noscript small { display: block; margin-top: 2em; font-size: 11px; letter-spacing: .12em; color: var(--paper-40); }
+
+@media (prefers-reduced-motion: reduce) {
+  #grain { animation: none; }
+  #thread { animation: none; }
+}
+@media (max-width: 640px) {
+  :root { --m1: 1150vh; }
+  #cap-l { left: calc(var(--gl) + 20px); }
+}

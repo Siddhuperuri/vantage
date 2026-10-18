@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Specimen - surveyed letterforms</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html,body{margin:0;background:#0a0908;color:#e9e2d3;font:12px/1.4 ui-monospace,Consolas,monospace}
+  main{padding:24px}
+  h2{font-weight:400;letter-spacing:.2em;font-size:11px;opacity:.5;margin:28px 0 10px}
+  canvas{display:block;background:#0a0908;max-width:100%}
+  .row{display:flex;flex-wrap:wrap;gap:16px}
+  svg.gl{height:22px;fill:none;stroke:#e9e2d3;stroke-width:1.2;vector-effect:non-scaling-stroke}
+  svg.gl path{vector-effect:non-scaling-stroke}
+</style>
+</head>
+<body>
+<main>
+  <h2>THE WORD, SINGLE LINE (axis = counter of the shared A)</h2>
+  <canvas id="w1" width="1600" height="300"></canvas>
+  <h2>THE WORD, STACKED (axis = the gap between rows)</h2>
+  <canvas id="w2" width="700" height="420"></canvas>
+  <h2>ALPHABET (with survey ticks)</h2>
+  <canvas id="al" width="1600" height="420"></canvas>
+  <h2>MICRO-TYPE (SVG, no ticks)</h2>
+  <div class="row" id="micro"></div>
+</main>
+<script src="../js/core.js"></script>
+<script src="../js/glyphs.js"></script>
+<script>
+(function(){
+  var G = SID.Glyphs;
+  function drawStrokes(ctx, strokes, S, ox, oy, tickCol, mainCol, tickKind){
+    strokes.forEach(function(st){
+      ctx.beginPath();
+      ctx.strokeStyle = st.kind==='tick' ? tickCol : mainCol;
+      ctx.lineWidth = st.kind==='tick' ? 1.6 : 2.2;
+      st.pts.forEach(function(p,i){ var x=ox+p[0]*S, y=oy-p[1]*S; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+      ctx.stroke();
+    });
+  }
+  function word(id, lines, S, ox, oy){
+    var c = document.getElementById(id), ctx = c.getContext('2d');
+    var w = G.layout(lines);
+    drawStrokes(ctx, w.strokes, S, ox, oy, '#ff5a1f', '#e9e2d3');
+    /* axis / door */
+    ctx.strokeStyle='#ff5a1f'; ctx.beginPath(); ctx.arc(ox,oy,0.13*S,0,6.283); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox-.3*S,oy); ctx.lineTo(ox+.3*S,oy); ctx.moveTo(ox,oy-.3*S); ctx.lineTo(ox,oy+.3*S); ctx.globalAlpha=.4; ctx.stroke(); ctx.globalAlpha=1;
+    ctx.fillStyle='#e9e2d377'; ctx.font='11px monospace';
+    ctx.fillText('bbox w='+(w.bbox.x1-w.bbox.x0).toFixed(2)+'  h='+(w.bbox.y1-w.bbox.y0).toFixed(2)+'  strokes='+w.strokes.length, 10, 16);
+  }
+  word('w1',['SIDDHARTHA'],128, 800-0.0*128, 190);
+  word('w2',['SIDDH','ARTHA'],118, 350, 150);
+
+  /* alphabet */
+  var ac = document.getElementById('al').getContext('2d');
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,-:/+';
+  var x=30,y=90,S=70;
+  chars.split('').forEach(function(ch){
+    var g = G.defs[ch];
+    var ts = G.ticksFor(g.s);
+    var strokes = g.s.map(function(p){return {pts:p.map(function(q){return [q[0]+x/S,q[1]]}),kind:'main'}})
+      .concat(ts.map(function(p){return {pts:p.map(function(q){return [q[0]+x/S,q[1]]}),kind:'tick'}}));
+    drawStrokes(ac, strokes, S, 0, y, '#ff5a1f', '#e9e2d3');
+    x += (g.w+.5)*S;
+    if (x > 1500){ x=30; y+=130; }
+  });
+
+  /* micro-type */
+  var m = document.getElementById('micro');
+  ['ARRANGES','COMPUTES','INFERS','SKETCHES','MEASURES','ASKS','SIDDHA + ARTHA','PERURI JAI SAI SIDDHARTHA','0123456789 .'].forEach(function(t){
+    var d=document.createElement('div'); d.innerHTML=G.svg(t); m.appendChild(d);
+  });
+})();
+</script>
+</body>
+</html>

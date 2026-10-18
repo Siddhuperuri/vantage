@@ -1,0 +1,668 @@
+/* ------------------------------------------------------------------
+   styles.css - the frame around the light.
+
+   The palette has three members: ground, paper, ember. Paper is the
+   only colour text is ever set in. Ember is reserved for the one thing
+   that is curious, and for a control that is currently on. Type is one
+   family - a monospace, tracked out and set in capitals at micro sizes
+   - because the interface is a margin note on a drawing, not a brand.
+   ------------------------------------------------------------------ */
+
+:root {
+  --ground: #0a0908;
+  --paper: #e9e2d3;
+  --paper-72: rgba(233, 226, 211, 0.72);
+  --paper-52: rgba(233, 226, 211, 0.52);
+  --paper-40: rgba(233, 226, 211, 0.4);
+  --paper-22: rgba(233, 226, 211, 0.22);
+  --paper-12: rgba(233, 226, 211, 0.12);
+  --paper-06: rgba(233, 226, 211, 0.06);
+  --ember: #ff5c24;
+
+  --gut: clamp(14px, 2.4vw, 34px);
+  --gt: max(var(--gut), env(safe-area-inset-top, 0px));
+  --gr: max(var(--gut), env(safe-area-inset-right, 0px));
+  --gb: max(var(--gut), env(safe-area-inset-bottom, 0px));
+  --gl: max(var(--gut), env(safe-area-inset-left, 0px));
+
+  --micro: clamp(9px, 0.42vw + 6px, 11.5px);
+  --small: clamp(10px, 0.5vw + 7px, 13px);
+  --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--ground);
+  color: var(--paper);
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  height: 100%;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- the stage ---------- */
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+.stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ui > * {
+  pointer-events: none;
+}
+.ui button,
+.ui .sheet,
+.ui .intro {
+  pointer-events: auto;
+}
+
+/* ---------- crop marks: the drawing has an edge ---------- */
+.marks__m {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border: 0 solid var(--paper-40);
+  opacity: 0.85;
+}
+.marks__m--tl {
+  top: var(--gt);
+  left: var(--gl);
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.marks__m--tr {
+  top: var(--gt);
+  right: var(--gr);
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.marks__m--bl {
+  bottom: var(--gb);
+  left: var(--gl);
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.marks__m--br {
+  bottom: var(--gb);
+  right: var(--gr);
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* ---------- plates in the corners ---------- */
+.plate {
+  position: absolute;
+  margin: 0;
+  font-size: var(--micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.75;
+  color: var(--paper-52);
+}
+.plate--tl {
+  top: calc(var(--gt) + 26px);
+  left: calc(var(--gl) + 26px);
+}
+.plate--tr {
+  top: calc(var(--gt) + 26px);
+  right: calc(var(--gr) + 26px);
+  text-align: right;
+}
+.plate p {
+  margin: 0;
+}
+.plate__kicker {
+  color: var(--paper-72);
+}
+.plate__line--dim {
+  color: var(--paper-22);
+}
+
+/* ---------- the readout: four numbers that are true ---------- */
+.readout {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1px 10px;
+  margin: 0;
+  font-size: var(--micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-40);
+}
+.readout > div {
+  display: contents;
+}
+.readout dt {
+  text-align: right;
+}
+.readout dd {
+  margin: 0;
+  color: var(--paper-72);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the lock gauge: a ruler on the right edge, with one ember pin */
+.gauge {
+  position: absolute;
+  right: calc(var(--gr) + 1px);
+  top: 22vh;
+  bottom: 22vh;
+  width: 9px;
+  background:
+    repeating-linear-gradient(to bottom, var(--paper-12) 0 1px, transparent 1px 8px) right / 4px
+      100% no-repeat,
+    repeating-linear-gradient(to bottom, var(--paper-22) 0 1px, transparent 1px calc(20% - 0.2px))
+      right / 9px 100% no-repeat;
+}
+.gauge__pin {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+  height: 1px;
+  background: var(--ember);
+  box-shadow: 0 0 6px rgba(255, 92, 36, 0.8);
+  will-change: transform;
+}
+
+/* ---------- docks ---------- */
+.dock {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dock--bl {
+  left: calc(var(--gl) + 26px);
+  bottom: calc(var(--gb) + 24px);
+  align-items: flex-start;
+}
+.dock--br {
+  right: calc(var(--gr) + 26px);
+  bottom: calc(var(--gb) + 24px);
+  align-items: flex-end;
+  max-width: min(42vw, 360px);
+}
+.dock__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- buttons: a drawn label, not a pill ---------- */
+.btn {
+  appearance: none;
+  background: transparent;
+  color: var(--paper-52);
+  border: 1px solid var(--paper-12);
+  border-radius: 0;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: var(--micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.26s var(--ease),
+    border-color 0.26s var(--ease),
+    background-color 0.26s var(--ease);
+}
+.btn:hover {
+  color: var(--paper);
+  border-color: var(--paper-40);
+}
+.btn:focus-visible {
+  outline: 1px solid var(--ember);
+  outline-offset: 2px;
+  color: var(--paper);
+}
+.btn.is-on {
+  color: var(--ember);
+  border-color: rgba(255, 92, 36, 0.52);
+}
+.btn kbd {
+  font: inherit;
+  margin-left: 6px;
+  padding: 0 3px;
+  color: var(--paper-22);
+  border: 1px solid var(--paper-12);
+}
+.btn--primary {
+  color: var(--paper);
+  border-color: var(--paper-40);
+  padding: 12px 26px;
+  letter-spacing: 0.34em;
+}
+.btn--primary:hover {
+  border-color: var(--ember);
+  color: var(--ember);
+}
+.btn--layer {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  width: 100%;
+  text-align: left;
+}
+.btn__index {
+  color: var(--paper-22);
+  font-variant-numeric: tabular-nums;
+}
+.btn__verb {
+  color: var(--paper-22);
+  letter-spacing: 0.14em;
+}
+.btn--layer.is-on .btn__verb {
+  color: rgba(255, 92, 36, 0.6);
+}
+.btn--ghost {
+  border-color: transparent;
+}
+.btn--restore {
+  position: absolute;
+  left: calc(var(--gl) + 26px);
+  bottom: calc(var(--gb) + 24px);
+  opacity: 0.4;
+}
+.btn--restore:hover {
+  opacity: 1;
+}
+
+.layers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(42vw, 300px);
+}
+.layers__says {
+  margin: 0;
+  font-size: var(--micro);
+  line-height: 1.7;
+  letter-spacing: 0.06em;
+  color: var(--paper-40);
+  text-align: right;
+  text-wrap: pretty;
+}
+
+/* ---------- the one line of guidance ---------- */
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--gb) + 6px);
+  margin: 0;
+  text-align: center;
+  font-size: var(--micro);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--paper-22);
+}
+
+/* ---------- the veil: loading, and the way in ---------- */
+.veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: var(--ground);
+  text-align: center;
+}
+.veil--ready {
+  background: transparent;
+}
+.veil__line {
+  font-size: var(--micro);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--paper-22);
+  animation: breathe 2.6s var(--ease) infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.intro {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: var(--gut);
+}
+.intro p {
+  margin: 0;
+}
+.intro__kicker {
+  font-size: var(--micro);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--paper-22);
+}
+.intro__title {
+  font-size: clamp(42px, 11vw, 132px);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  line-height: 1;
+  color: var(--paper);
+}
+.intro__body {
+  max-width: 34ch;
+  font-size: var(--small);
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+  color: var(--paper-52);
+  text-wrap: pretty;
+}
+.intro__meta {
+  font-size: var(--micro);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-22);
+}
+
+/* ---------- settings ---------- */
+.sheet {
+  position: absolute;
+  left: calc(var(--gl) + 26px);
+  bottom: calc(var(--gb) + 92px);
+  width: min(92vw, 420px);
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  padding: 18px;
+  background: rgba(10, 9, 8, 0.93);
+  border: 1px solid var(--paper-12);
+  backdrop-filter: blur(6px);
+}
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sheet__title {
+  margin: 0;
+  font-size: var(--micro);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--paper-72);
+}
+.field {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--paper-06);
+  padding-top: 12px;
+}
+.field legend {
+  padding: 0 8px 0 0;
+  font-size: var(--micro);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--paper-40);
+}
+.field__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.field__note {
+  margin: 0;
+  font-size: var(--micro);
+  line-height: 1.75;
+  letter-spacing: 0.04em;
+  color: var(--paper-22);
+  text-wrap: pretty;
+}
+
+/* ---------- the no-WebGL still ---------- */
+.fallback {
+  height: 100%;
+  overflow: auto;
+  padding: clamp(24px, 6vw, 80px);
+  display: grid;
+  gap: clamp(28px, 5vw, 64px);
+  align-content: start;
+}
+.fallback__art {
+  width: 100%;
+  max-width: 920px;
+  height: auto;
+}
+.fallback__text {
+  max-width: 68ch;
+  display: grid;
+  gap: 1.1em;
+  font-size: var(--small);
+  line-height: 1.85;
+  letter-spacing: 0.04em;
+  color: var(--paper-52);
+}
+.fallback__text h1 {
+  margin: 0;
+  font-size: clamp(16px, 2.4vw, 22px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+.fallback__text ul {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 0.7em;
+}
+.fallback__text strong {
+  color: var(--paper-72);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ---------- when the interface is hidden, nothing is left behind ---------- */
+.stage--bare {
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.08s !important;
+  }
+}
+
+/* narrow screens: one column of controls at the foot of the frame,
+   because two corner docks collide long before a phone is narrow */
+@media (max-width: 720px) {
+  .plate--tr {
+    display: none;
+  }
+  .plate--tl {
+    top: calc(var(--gt) + 14px);
+    left: calc(var(--gl) + 14px);
+  }
+  .gauge {
+    top: 12vh;
+    bottom: 12vh;
+  }
+  .dock--br {
+    left: calc(var(--gl) + 14px);
+    right: calc(var(--gr) + 14px);
+    bottom: calc(var(--gb) + 132px);
+    max-width: none;
+    align-items: stretch;
+  }
+  /* the key hints cost width the camera dock has not got: it wraps to
+     three rows and walks up into the layer list */
+  .dock--bl .btn kbd {
+    display: none;
+  }
+  .layers {
+    width: 100%;
+  }
+  .layers__says {
+    text-align: left;
+  }
+  .dock--bl {
+    left: calc(var(--gl) + 14px);
+    right: calc(var(--gr) + 14px);
+    bottom: calc(var(--gb) + 10px);
+  }
+  .btn--restore {
+    left: calc(var(--gl) + 14px);
+    bottom: calc(var(--gb) + 10px);
+  }
+  .hint {
+    display: none;
+  }
+  .sheet {
+    left: calc(var(--gl) + 14px);
+    right: calc(var(--gr) + 14px);
+    bottom: calc(var(--gb) + 10px);
+    width: auto;
+    max-height: 62vh;
+  }
+}
+
+/* a short window (a laptop in a small browser) has the same problem */
+@media (max-height: 560px) and (min-width: 721px) {
+  .layers__says {
+    display: none;
+  }
+  .gauge {
+    display: none;
+  }
+}
+
+/* Between a phone and a desktop the two corner docks still want about
+   820px between them. Keep them in their corners and take back the
+   width by dropping the key hints, rather than pushing the layer list
+   across the artwork. */
+@media (min-width: 721px) and (max-width: 900px) {
+  .dock--bl .btn kbd {
+    display: none;
+  }
+  .dock--br {
+    max-width: 300px;
+  }
+  .layers {
+    width: 300px;
+  }
+  .plate--tr {
+    display: none;
+  }
+}
+
+/* ---------- the journey: four places, one strip ---------- */
+.journey {
+  position: absolute;
+  top: calc(var(--gt) + 26px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+.journey__list {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.btn--numeral {
+  min-width: 34px;
+  padding: 5px 8px;
+  text-align: center;
+  letter-spacing: 0.12em;
+  border-color: transparent;
+  border-bottom-color: var(--paper-12);
+}
+.btn--numeral:hover {
+  border-bottom-color: var(--paper-40);
+}
+.btn--numeral.is-on {
+  border-bottom-color: var(--ember);
+}
+
+/* the only prompt to go on, and only while the ember is inviting */
+.btn--onward {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--gb) + 30px);
+  border-color: rgba(255, 92, 36, 0.4);
+  color: var(--ember);
+  animation: onward 3.4s var(--ease) infinite;
+}
+@keyframes onward {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn--onward {
+    animation: none;
+    opacity: 1;
+  }
+}
+@media (max-width: 720px) {
+  .journey {
+    top: auto;
+    bottom: calc(var(--gb) + 10px);
+    left: auto;
+    right: calc(var(--gr) + 14px);
+    transform: none;
+  }
+  .btn--onward {
+    bottom: calc(var(--gb) + 196px);
+  }
+}
