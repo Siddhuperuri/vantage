@@ -13,9 +13,14 @@
 
 /** the scene is rendered into a linear target; the canvas wants sRGB */
 const OUTPUT = /* glsl */ `
+  /**
+   * The scene target already holds display-encoded values, so a pass
+   * must hand them on unchanged. Encoding again turns this world's
+   * ground - 0.039 - into 0.237, which is a flat mid grey, and every
+   * print treatment was laying that over the whole frame.
+   */
   vec3 toSRGB(vec3 c) {
-    c = max(c, vec3(0.0));
-    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+    return max(c, vec3(0.0));
   }
 `;
 
@@ -41,7 +46,7 @@ const COMMON = /* glsl */ `
    * and the void is half of what this world is made of.
    */
   float signalLuma(vec3 c) {
-    return max(luma(c) - 0.018, 0.0) * 1.05;
+    return max(luma(c) - 0.055, 0.0) * 1.06;
   }
 
   float hash21(vec2 p) {
@@ -132,7 +137,7 @@ export const DITHER_FRAG = /* glsl */ `
     // by the threshold, then snapped. The ground is subtracted first,
     // or the dither lifts the blacks and the void stops being void.
     float levels = max(2.0, uLevels);
-    vec3 signal = max(src - 0.055, vec3(0.0)) * 1.06;
+    vec3 signal = max(src - 0.07, vec3(0.0)) * 1.08;
     vec3 q = floor(signal * levels + threshold * 1.1 + 0.5) / levels;
 
     vec3 outc = mix(src, clamp(q, 0.0, 1.0), uAmount);
@@ -238,7 +243,12 @@ export const PIXEL_FRAG = /* glsl */ `
     vec3 src = texture2D(uScene, vUv).rgb;
     vec3 block = texture2D(uScene, clamp(snapped, 0.0, 1.0)).rgb;
 
+    // The ground has to come off first. Rounding to the nearest level
+    // lifts anything above half a level - and in this world almost
+    // every pixel is a hair above black, so the whole frame jumps to
+    // mid grey and the void disappears.
     float levels = max(2.0, uLevels);
+    block = max(block - 0.07, vec3(0.0)) * 1.08;
     block = floor(block * levels + 0.5) / levels;
 
     gl_FragColor = vec4(toSRGB(mix(src, block, uAmount)), uOpacity);

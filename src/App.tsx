@@ -137,6 +137,7 @@ export function App() {
       {bundle && (
         <Canvas
           dpr={dpr}
+          shadows={profile.tier !== 'low'}
           frameloop="always"
           camera={{ position: [0, 0, 0], fov: 46, near: 0.08, far: 140 }}
           gl={{

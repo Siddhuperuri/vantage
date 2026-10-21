@@ -27,13 +27,11 @@ test('capture one still of each place', async ({ page }) => {
   await travel(22);
   await page.screenshot({ path: 'docs/stills/03-edge.png' });
 
-  // close on the still life: clay, glass, foil, and the bauhaus group
+  // the matter: clay, glass, foil and the bauhaus group, from a little
+  // closer in than the module's own viewpoint
   await page.evaluate(() => {
-    const v = window.__vantage as unknown as {
-      rig: { drag(x: number, y: number): void; dolly(a: number): void };
-    };
-    v.rig.dolly(-4.5);
-    v.rig.drag(-150, -30);
+    const v = window.__vantage as unknown as { rig: { dolly(a: number): void } };
+    v.rig.dolly(-2.2);
   });
   await advance(page, 10);
   await page.screenshot({ path: 'docs/stills/04-edge-matter.png' });
@@ -46,6 +44,12 @@ test('capture one still of each place', async ({ page }) => {
   await travel(22, 16);
   await page.screenshot({ path: 'docs/stills/06-deep-fractal.png' });
 
-  await travel(18, 16);
-  await page.screenshot({ path: 'docs/stills/07-deep-ending.png' });
+  await travel(20, 18);
+  await page.screenshot({ path: 'docs/stills/07-deep-name.png' });
+
+  // all the way to the end, and held still, which is what the last
+  // line waits for
+  await travel(30, 10);
+  await advance(page, 14);
+  await page.screenshot({ path: 'docs/stills/08-deep-ending.png' });
 });

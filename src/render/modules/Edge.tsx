@@ -22,6 +22,7 @@ import { useEffect, useMemo } from 'react';
 import {
   AdditiveBlending,
   BackSide,
+  DirectionalLight,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
@@ -30,12 +31,13 @@ import {
   CylinderGeometry,
   DoubleSide,
   Group,
+  HemisphereLight,
   LineBasicMaterial,
   LineSegments,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
+  PointLight,
   ShaderMaterial,
   SphereGeometry,
 } from 'three';
@@ -92,8 +94,31 @@ const FOIL_FRAG = /* glsl */ `
     c = mix(uPaper * 0.5, c, 0.42);
     c = mix(c, uEmber, fres * 0.33);
 
-    float a = (0.1 + fres * 0.75) * uOpacity;
+    float a = (0.3 + fres * 0.65) * uOpacity;
     gl_FragColor = vec4(c * (0.3 + fres), a);
+  }
+`;
+
+/* ---- 4. GLASSMORPHISM: a pane that is read by its edges ---------- */
+const GLASS_FRAG = /* glsl */ `
+  precision highp float;
+  uniform vec3  uTint;
+  uniform float uOpacity;
+  varying vec3 vNormalW;
+  varying vec3 vViewW;
+
+  void main() {
+    vec3 n = normalize(vNormalW);
+    float ndv = clamp(dot(n, normalize(vViewW)), 0.0, 1.0);
+    // a pane in a dark room is read by its edges, not by its face
+    float fres = pow(1.0 - ndv, 2.3);
+    float edge = smoothstep(0.55, 1.0, fres);
+
+    vec3 c = mix(uTint * 0.4, uTint, fres);
+    // selective: the face stays translucent so what is behind it keeps
+    // its contrast, and only the edge carries weight
+    float a = (0.085 + fres * 0.55 + edge * 0.3) * uOpacity;
+    gl_FragColor = vec4(c, a);
   }
 `;
 
@@ -116,7 +141,9 @@ export function Edge() {
     const group = new Group();
     group.name = 'edge';
     const disposables: { dispose(): void }[] = [];
-    const floorY = -3.4;
+    // arriving here by travelling keeps a level camera, so the whole
+    // composition is built around eye level rather than on a far floor
+    const floorY = -1.95;
 
     /* ---- 17. PAPER CUTOUT: three drafts, separated in depth ------ */
     const drafts = new Group();
@@ -131,20 +158,29 @@ export function Edge() {
     draftGeo.setAttribute('position', new BufferAttribute(new Float32Array(kept), 3));
     disposables.push(draftGeo);
 
-    const sheetGeo = new PlaneGeometry(13.5, 4.2);
+    const sheetGeo = new PlaneGeometry(5.6, 1.95);
     const sheetMat = new MeshStandardMaterial({
-      color: new Color('#15120f'),
-      roughness: 0.95,
+      // light enough to read as paper against the ground, dark enough
+      // to still be this world
+      color: new Color('#262019'),
+      roughness: 0.94,
       metalness: 0,
       side: DoubleSide,
     });
     disposables.push(sheetGeo, sheetMat);
 
+    // The print is module I's design layer, which carries ABSOLUTE world
+    // coordinates from the vantage: the word sits at z = -12.6 there.
+    // Dropped into a group it would be drawn twelve units behind its own
+    // sheet, so it is scaled to the sheet and brought back onto it.
+    const PRINT_SCALE = 0.38;
+    const PRINT_Z = 12.6 * PRINT_SCALE;
+
     for (let i = 0; i < 3; i++) {
       const layer = new Group();
       // real separation, so the parallax between them is real too
-      layer.position.set(at[0] - 1.1 + i * 0.9, at[1] + 0.6 - i * 0.5, at[2] + 2.4 - i * 1.7);
-      layer.rotation.set(-0.42 + i * 0.05, 0.1 - i * 0.07, -0.03 + i * 0.02);
+      layer.position.set(at[0] - 5.4 + i * 5.3, at[1] + 0.35 - i * 0.3, at[2] - 4.6 - i * 1.6);
+      layer.rotation.set(-0.38 + i * 0.06, 0.5 - i * 0.5, -0.05 + i * 0.05);
 
       const sheet = new Mesh(sheetGeo, sheetMat);
       sheet.receiveShadow = true;
@@ -154,19 +190,45 @@ export function Edge() {
       const printMat = new LineBasicMaterial({
         color: PAPER.clone(),
         transparent: true,
-        opacity: 0.1 + i * 0.05,
+        opacity: 0.2 + i * 0.08,
         depthWrite: false,
         blending: AdditiveBlending,
       });
       disposables.push(printMat);
       const print = new LineSegments(draftGeo, printMat);
-      // the drawing lies on its sheet, scaled to it
-      print.scale.setScalar(0.92);
-      print.position.z = 0.02;
+      print.scale.setScalar(PRINT_SCALE);
+      print.position.z = PRINT_Z + 0.03;
       layer.add(print);
       drafts.add(layer);
     }
     group.add(drafts);
+
+    // One light for this module, with a bounded shadow camera around
+    // the drafts and the still life. Without it the sheets are unlit
+    // and the separation between them cannot be seen at all.
+    if (profile.tier !== 'low') {
+      const key = new DirectionalLight(new Color('#ffe8d2'), 0.85);
+      key.position.set(at[0] - 6, at[1] + 8, at[2] + 9);
+      key.target.position.set(at[0], floorY + 0.4, at[2] - 3);
+      key.castShadow = true;
+      key.shadow.mapSize.set(profile.tier === 'high' ? 1024 : 512, profile.tier === 'high' ? 1024 : 512);
+      const cam = key.shadow.camera;
+      cam.left = -11;
+      cam.right = 11;
+      cam.top = 11;
+      cam.bottom = -11;
+      cam.near = 1;
+      cam.far = 30;
+      cam.updateProjectionMatrix();
+      key.shadow.bias = -0.0014;
+      group.add(key, key.target);
+
+      // a low fill from above: without it an unlit sheet is a hole in
+      // the frame rather than a piece of paper in a dark room
+      const fill = new HemisphereLight(new Color('#5a4e42'), new Color('#0a0908'), 0.5);
+      fill.position.set(at[0], at[1] + 6, at[2]);
+      group.add(fill);
+    }
 
     /* ---- 9. TOPOGRAPHIC LINES: contours of a real field ---------- */
     const contourPts: number[] = [];
@@ -227,7 +289,7 @@ export function Edge() {
 
     /* ---- 16. BAUHAUS: four shapes, composed, not scattered ------- */
     const bauhaus = new Group();
-    bauhaus.position.set(at[0] + 6.4, at[1] + 1.2, at[2] - 3.2);
+    bauhaus.position.set(at[0] + 4.9, at[1] + 0.5, at[2] - 5.2);
     const circleGeo = new CircleGeometry(1.25, 64);
     const squareGeo = new PlaneGeometry(1.9, 1.9);
     const triGeo = new BufferGeometry();
@@ -252,7 +314,7 @@ export function Edge() {
         opacity,
         side: DoubleSide,
       });
-    const mCircle = flat('#ff5c24', 0.5);
+    const mCircle = flat('#ff5c24', 0.32);
     const mSquare = flat('#e9e2d3', 0.12);
     const mTri = flat('#e9e2d3', 0.2);
     const mArc = new LineBasicMaterial({ color: PAPER.clone(), transparent: true, opacity: 0.3 });
@@ -273,10 +335,10 @@ export function Edge() {
 
     /* ---- 3 / 4 / 5: three solids, in contact ---------------------- */
     const still = new Group();
-    still.position.set(at[0] - 4.1, floorY, at[2] + 3.4);
+    still.position.set(at[0] - 0.4, floorY, at[2] + 0.9);
 
     // CLAY: rounded, soft, unglazed, sitting ON the plinth, not in it
-    const plinthGeo = new BoxGeometry(3.4, 0.26, 2.2);
+    const plinthGeo = new BoxGeometry(4.0, 0.26, 2.1);
     const plinthMat = new MeshStandardMaterial({
       color: new Color('#1b1713'),
       roughness: 0.96,
@@ -287,7 +349,7 @@ export function Edge() {
     plinth.receiveShadow = true;
     const clayGeo = new SphereGeometry(0.62, 48, 32);
     const clayMat = new MeshStandardMaterial({
-      color: new Color('#b9a68c'),
+      color: new Color('#7a6c5a'),
       roughness: 0.92,
       metalness: 0,
       flatShading: false,
@@ -295,31 +357,34 @@ export function Edge() {
     const clay = new Mesh(clayGeo, clayMat);
     // squashed where it meets the plinth: a contact, not a float
     clay.scale.set(1, 0.86, 1);
-    clay.position.set(-0.95, 0.26 + 0.62 * 0.86, 0);
+    clay.position.set(-1.05, 0.26 + 0.62 * 0.86, 0.1);
     clay.castShadow = true;
     disposables.push(plinthGeo, plinthMat, clayGeo, clayMat);
 
-    // GLASS: selective, and only where it has something to refract
-    const glassGeo = new BoxGeometry(0.9, 1.25, 0.14);
-    const useTransmission = profile.tier === 'high';
-    const glassMat = new MeshPhysicalMaterial({
-      color: new Color('#cfd6d2'),
-      roughness: 0.14,
-      metalness: 0,
-      transmission: useTransmission ? 0.92 : 0,
-      thickness: 0.5,
-      ior: 1.45,
-      transparent: !useTransmission,
-      opacity: useTransmission ? 1 : 0.22,
+    // GLASS: selective translucency. MeshPhysicalMaterial's transmission
+    // does not resolve in this renderer setup, and a transmissive slab
+    // in a dark room transmits darkness anyway, so the pane is written
+    // out: a translucent face that keeps the contrast of what is behind
+    // it, and an edge that carries the light.
+    const glassGeo = new BoxGeometry(0.95, 1.35, 0.12);
+    const glassMat = new ShaderMaterial({
+      vertexShader: FOIL_VERT,
+      fragmentShader: GLASS_FRAG,
+      uniforms: {
+        uTint: { value: new Color('#cfdbd6') },
+        uOpacity: { value: 1 },
+      },
+      transparent: true,
+      depthWrite: false,
       side: DoubleSide,
     });
     const glass = new Mesh(glassGeo, glassMat);
-    glass.position.set(0.15, 0.26 + 0.63, 0.1);
+    glass.position.set(0.15, 0.26 + 0.68, -0.15);
     glass.rotation.y = -0.34;
     disposables.push(glassGeo, glassMat);
 
     // FOIL: a disc that changes colour with where you stand
-    const foilGeo = new CylinderGeometry(0.58, 0.58, 0.035, 64);
+    const foilGeo = new CylinderGeometry(0.62, 0.62, 0.04, 64);
     const foilMat = new ShaderMaterial({
       vertexShader: FOIL_VERT,
       fragmentShader: FOIL_FRAG,
@@ -332,20 +397,42 @@ export function Edge() {
       side: DoubleSide,
     });
     const foil = new Mesh(foilGeo, foilMat);
-    foil.position.set(1.15, 0.26 + 0.02, -0.15);
-    foil.rotation.set(-1.15, 0.3, 0.2);
+    foil.castShadow = true;
+    foil.position.set(1.22, 0.26 + 0.1, 0.3);
+    foil.rotation.set(-0.72, 0.35, 0.22);
     disposables.push(foilGeo, foilMat);
 
-    still.add(plinth, clay, glass, foil);
+    const displayLight = new PointLight(new Color('#ffd9b4'), 2.6, 5.2, 2);
+    displayLight.position.set(0.1, 1.7, 1.8);
+
+    // Transmission samples the scene behind the slab, and a light is
+    // not geometry: behind the glass there was nothing to see, so it
+    // rendered as a correct black rectangle. This is the thing it
+    // refracts - a pale card standing just behind it, lit by the same
+    // display light, which is also what a still life would do.
+    const cardGeo = new PlaneGeometry(1.35, 1.5);
+    const cardMat = new MeshStandardMaterial({
+      color: new Color('#cdbfa6'),
+      roughness: 1,
+      metalness: 0,
+      side: DoubleSide,
+    });
+    disposables.push(cardGeo, cardMat);
+    const card = new Mesh(cardGeo, cardMat);
+    card.position.set(0.17, 0.26 + 0.76, -0.82);
+    card.rotation.y = 0.12;
+    card.receiveShadow = true;
+
+    still.add(plinth, clay, card, glass, foil, displayLight);
     group.add(still);
 
     /* ---- restrained typography: one sentence, lying flat --------- */
     const typo = new Group();
     const line1 = segmentsGeometry(
-      textSegments(SENTENCE, { x: -3.4, y: 0, z: 0, size: 0.26, track: 0.34 }),
+      textSegments(SENTENCE, { x: -2.5, y: 0, z: 0, size: 0.19, track: 0.34 }),
     );
     const line2 = segmentsGeometry(
-      textSegments(WISH, { x: -3.4, y: -0.52, z: 0, size: 0.15, track: 0.3 }),
+      textSegments(WISH, { x: -2.5, y: -0.38, z: 0, size: 0.11, track: 0.3 }),
     );
     const typoMat = new LineBasicMaterial({
       color: PAPER.clone(),
@@ -358,7 +445,7 @@ export function Edge() {
     const t1 = new LineSegments(line1, typoMat);
     const t2 = new LineSegments(line2, typoMat);
     typo.add(t1, t2);
-    typo.position.set(at[0], at[1] - 2.6, at[2] + 2.0);
+    typo.position.set(at[0] + 0.2, at[1] - 1.5, at[2] + 3.4);
     typo.rotation.x = -0.86;
     group.add(typo);
 
@@ -377,7 +464,7 @@ export function Edge() {
     horizon.position.set(at[0], floorY, at[2]);
     group.add(horizon);
 
-    return { group, disposables, typoMat, foilMat, contourMat, drafts, bauhaus, still, at };
+    return { group, disposables, typoMat, foilMat, glassMat, contourMat, drafts, bauhaus, still, at };
   }, [world, profile]);
 
   useEffect(
@@ -403,6 +490,7 @@ export function Edge() {
     );
     built.contourMat.opacity = 0.085 * show;
     built.foilMat.uniforms.uOpacity.value = show;
+    built.glassMat.uniforms.uOpacity.value = show;
   });
 
   return <primitive object={built.group} />;

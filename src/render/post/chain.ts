@@ -276,7 +276,8 @@ export class PostChain {
 
     /* ---- selective glow, only when asked for --------------------- */
     if (this.bloom > 0.002 && this.glowA && this.glowB) {
-      this.bright ??= this.simplePass(BRIGHT_FRAG, { uThreshold: { value: 0.55 } });
+      // only genuinely bright things glow: the ember, and the name
+      this.bright ??= this.simplePass(BRIGHT_FRAG, { uThreshold: { value: 0.74 } });
       this.blur ??= this.simplePass(BLUR_FRAG, { uDirection: { value: new Vector2(1, 0) } });
       this.composite ??= this.simplePass(COMPOSITE_FRAG, {
         uGlow: { value: null },

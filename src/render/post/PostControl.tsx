@@ -48,8 +48,11 @@ function treatmentFor(module: string, travel: number): TreatmentId {
 
 function bloomFor(module: string, allowed: boolean): number {
   if (!allowed) return 0;
-  if (module === 'deep') return 0.38;
-  if (module === 'inside') return 0.16;
+  // restrained on purpose: over a scene made of thousands of thin
+  // lines, a strong glow blurs into a uniform grey haze and the void
+  // stops being void
+  if (module === 'deep') return 0.16;
+  if (module === 'inside') return 0.1;
   return 0;
 }
 

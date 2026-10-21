@@ -51,8 +51,8 @@ the `high` tier.
 | 1 | **Liquid morph** | the subject's own design-layer geometry, with a second target position per vertex on a closed form; per-point smootherstep crossing staggered left to right so it folds rather than scales | `uMorph` (driven by descent), swell amplitude | the fold is driven by how far the visitor has fallen, not by a clock | low (one extra attribute, no CPU work) | the morph simply rests at 0 | seen in the deep |
 | 2 | **Metaballs** | a real implicit surface: six orbiting centres combined with a polynomial smooth minimum, ray-marched inside a bounding sphere | `uSteps` (22/36/56 by tier), merge radius `k` rises with stillness | energy swells the field | medium, and strictly bounded: it only marches the pixels its quad covers | step count drops by tier; the quad is skipped outside its stretch of the fall | **seen** (still 06) |
 | 3 | **Clay** | unglazed `MeshStandardMaterial`, roughness 0.92, squashed where it meets its plinth so the contact is a contact | roughness, squash, plinth | lit by the ember as it passes | low | none needed | **seen** (still 03) |
-| 4 | **Glassmorphism** | `MeshPhysicalMaterial` with real transmission and thickness, used on exactly one object | `transmission`, `thickness`, `ior` | refracts whatever is behind it | high — transmission costs an extra scene pass | **high tier only**; below that it falls back to a thin translucent slab with no transmission pass | implemented; not yet looked at closely |
-| 5 | **Holographic foil** | thin-film interference: the colour is a function of view angle through a cosine triple, held inside the palette so it is a warm sheet rather than a rainbow | film thickness, fresnel exponent | changes as the visitor moves, which is the whole point | low | none needed | implemented; not yet looked at closely |
+| 4 | **Glassmorphism** | a written-out translucent pane: a face that keeps the contrast of what is behind it, an edge that carries the light, and a lit card standing behind it to be seen through. Physical transmission was tried first and abandoned (see defects) | tint, fresnel exponent, edge weight | reads by its edges as the camera moves | low, and tier-independent | none needed: there is one path | **seen** (stills 03, 04) |
+| 5 | **Holographic foil** | thin-film interference: the colour is a function of view angle through a cosine triple, held inside the palette so it is a warm sheet rather than a rainbow | film thickness, fresnel exponent | changes as the visitor moves, which is the whole point | low | none needed | **seen** (still 04) |
 
 ### Light and motion
 
@@ -60,7 +60,7 @@ the `high` tier.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 6 | **Particle swarm** | two systems: module I's field layer (a cloud that denoises onto the stroke) and module IV's shaft swarm | count by tier (3.2k/8k/15k), dispersion, attraction | gathers toward attention, scatters with energy, collapses onto the stroke when attended to | low — all motion is in the vertex shader | count drops by tier | **seen** (stills 01, 06) |
 | 7 | **Flow fields** | a coherent analytic vector field, integrated four Euler steps per vertex; each particle is a two-vertex streak one step long, so the segment drawn *is* a piece of the streamline | field scale, step size, streak length | the swarm above rides it | low | fewer particles | **seen** (still 06) |
-| 8 | **Neon glow** | bright-pass at 0.55, two separable five-tap blurs at half resolution, composited back into the scene target so the print treatments print the lit image | `bloom` strength per module, threshold | none directly | medium: three half-res passes | **off entirely on the low tier and at the vantage**, where the art direction forbids it | implemented; not yet isolated in a still |
+| 8 | **Neon glow** | bright-pass at 0.74, two separable five-tap blurs at half resolution, composited back into the scene target so the print treatments print the lit image | `bloom` strength per module, threshold | none directly | medium: three half-res passes | **off entirely on the low tier and at the vantage**, where the art direction forbids it | implemented and tuned down twice after it hazed the descent; not isolated in a still of its own |
 | 9 | **Topographic lines** | marching squares over a real scalar field (two octaves of value noise plus a dip where the subject stood), 13 levels | levels (7 on low), extent, step | static: it is the ground, not an animation | low, built once | fewer levels | **seen** (still 03) |
 | 10 | **Vaporwave grid** | rings and verticals on the shaft, faded by distance from the eye in the vertex shader | ring spacing, opacity, fade range | gives the fall its scale | low | none needed | **seen** (still 06) |
 
@@ -77,16 +77,16 @@ as "a little light" fills the void with ink.
 | 12 | **Dithering** | a real recursive Bayer construction, ordered or noise-based, pushing the value across a level boundary before snapping | levels (6), scale, `uBlue` | — | one pass | none | **seen** |
 | 13 | **Halftone** | a rotated dot screen: each dot is sized by the light measured at the centre of its own cell | cell, screen angle | — | one pass | none | **seen** (still 06) |
 | 14 | **Risograph** | two ink plates, screened at different angles and deliberately out of register, printing on this world's ground rather than white stock; the overlap builds a third colour | registration offset, grain, two inks | — | one pass, two screens | none | **seen** (still 03) |
-| 15 | **Pixel art** | nearest-neighbour block sampling plus palette quantisation | block size, levels | — | one pass | none | asserted by test; not yet looked at |
-| 19 | **Glitch** | banded horizontal displacement chosen deterministically per tick, plus channel separation and an occasional scan line | shift, block fraction, `glitch` 0..1 | **an event, not an ambience**: it fires on arrival in a new place and at the bottom of the descent, then decays | one pass, only while firing | nothing fires | implemented; shader compile bug found by the suite and fixed |
+| 15 | **Pixel art** | nearest-neighbour block sampling plus palette quantisation, with the ground subtracted first | block size, levels | — | one pass | none | **seen** (still 08) |
+| 19 | **Glitch** | banded horizontal displacement chosen deterministically per tick, plus channel separation and an occasional scan line | shift, block fraction, `glitch` 0..1 | **an event, not an ambience**: it fires on arrival in a new place and at the bottom of the descent, then decays | one pass, only while firing | nothing fires | **seen** (still 08) |
 
 ### Geometry and composition
 
 | # | effect | approach | parameters | interaction | cost | fallback | verified |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 16 | **Bauhaus shapes** | circle, square, triangle and arc in one composed arrangement, flat-shaded, one ember accent | placement, opacities | static by design | negligible | none | implemented; present in the edge but not isolated in a still |
+| 16 | **Bauhaus shapes** | circle, square, triangle and arc in one composed arrangement, flat-shaded, one ember accent | placement, opacities | static by design | negligible | none | **seen** (still 03) |
 | 17 | **Paper cutout** | three draft sheets at real separation, carrying a thinned print of the design layer, with cast and received shadows | separation, rotation, print density | real parallax as the camera moves | low | none | **seen** (still 03) |
-| 18 | **Kinetic typography** | the name's letters, each moving as one unit, assembling from the shaft wall as the visitor descends and leaning toward them as they approach | assemble (driven by descent), lean distance | responds to camera position and to stillness | low | assembles instantly under reduced motion | implemented; the assembly stretch has not been isolated in a still |
+| 18 | **Kinetic typography** | the name's letters, each moving as one unit, assembling from the shaft wall as the visitor descends and leaning toward them as they approach | assemble (driven by descent), lean distance | responds to camera position and to stillness | low | assembles instantly under reduced motion | **seen** (still 08) |
 | 20 | **Ray-marched fractal** | a Menger fold distance field, bounded iterations (2/3/4 by tier) and bounded steps, marched inside a bounding sphere on one quad | iterations, steps, scale | energy swells the field | medium, bounded as metaballs are | iterations and steps drop by tier; skipped outside its stretch | implemented; the lit implicit surface in still 06 is this system (shared marcher) |
 
 **Where they are, and where they deliberately are not.** The vantage and the
@@ -179,6 +179,27 @@ Phase 2 found these by driving the real thing rather than by reading it:
     it could **quietly test a bundle that no longer existed**. It now always
     builds what it tests.
 
+11. **Every print treatment was encoding colour twice.** The scene target
+    already holds display-encoded values and each pass encoded them again, so
+    this world's ground of 0.039 came out at 0.237 - a flat mid grey laid over
+    the whole frame. All five print treatments were washed out by it, and it
+    only became obvious once a still was compared against the same frame with
+    the chain switched off.
+12. The pixel pass **rounded the near-black floor up a level**, lifting almost
+    every pixel to mid grey. It now subtracts the ground first, as dither does.
+13. The transmissive glass was also marked `transparent: true`, which puts it
+    in the transparent pass where three never samples the transmission buffer:
+    it rendered as its own dark body, a black rectangle. Fixing that still left
+    glass transmitting a void, so the approach was changed rather than patched.
+14. **Content was placed for a camera pitch only one route gives you.** The
+    edge's composition and the deep's assembling name were positioned for the
+    downward pitch that arriving via the journey strip sets, but travelling
+    there by wheel keeps a level camera, so both sat below the frame entirely.
+    Both are now composed around eye level.
+15. The edge's draft sheets were 13.5 units wide a few units in front of the
+    camera, blocking the module, and the print on them reused module I's
+    **absolute** coordinates, so it was drawn twelve units behind its own sheet.
+
 Earlier Phase 1 fixes (white-frame blend mode, 54-pixel points, phantom drag on
 click, drift that never died, world built inside an animation frame) are in the
 git history of this file.
@@ -187,15 +208,17 @@ git history of this file.
 
 ## 5. Known defects and limitations
 
-- **Four treatments have not been isolated in a still**: glass, foil, bauhaus,
-  and the kinetic-typography assembly. They are implemented, typecheck, run
-  without console errors, and are reached by the journey tests, but the
-  "verified" column tells the truth about which have actually been looked at.
-- **Glass transmission is high-tier only.** The fallback is a thin translucent
-  slab, which is honest but much less interesting.
-- **The still life at the edge is small in frame.** It reads as a composition
-  from the module's default viewpoint but rewards dollying in, and there is no
-  cue telling the visitor that.
+- **Neon glow has not been isolated in a still of its own.** It is on in the
+  inside and the deep, and was tuned down twice after it hazed the descent, but
+  no capture separates it from everything else in the frame.
+- **Glass is not physically transmissive.** Transmission did not resolve in
+  this renderer setup, and a transmissive slab in a dark room transmits
+  darkness in any case. The pane is written out instead: translucent face, lit
+  edge, and a card behind it to be seen through. It reads as glass; it is not
+  refracting the scene.
+- **The edge rewards dollying in.** The still life reads from the module's own
+  viewpoint, but its detail - the foil's colour shift especially - only really
+  appears closer, and nothing tells the visitor that.
 - **Module II has no keyboard path to individual letters.** Attention there is
   pointer- and gaze-shaped; the layer buttons and the journey strip remain
   keyboard-operable, and the module is described in the live region, but a

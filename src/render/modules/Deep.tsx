@@ -448,12 +448,12 @@ export function Deep() {
     const kmeta: number[] = [];
     const letters = word.glyphs.length;
     const scale = 1.05;
-    const baseY = BOTTOM + 9;
+    const baseY = BOTTOM + 4;
     word.glyphs.forEach((g) => {
       const anchor: [number, number, number] = [
         g.cx * scale,
         baseY + (g.cy - 0.5) * scale,
-        axisZ + 1.5,
+        axisZ - 2.2,
       ];
       const data = textSegments(g.ch, {
         x: anchor[0] - (g.w * scale) / 2,
@@ -531,7 +531,7 @@ export function Deep() {
     lastGeo.setAttribute('aMeta', new BufferAttribute(lastMeta, 2));
     disposables.push(lastGeo, lastMat);
     const last = new LineSegments(lastGeo, lastMat);
-    last.position.set(0, BOTTOM + 2.5, axisZ + 2.5);
+    last.position.set(0, BOTTOM + 1.6, axisZ - 1.8);
     last.frustumCulled = false;
     last.name = 'deep-last';
     group.add(last);
@@ -596,11 +596,11 @@ export function Deep() {
     ku.uPresence.value = show;
     ku.uStill.value = sim.still;
     ku.uTime.value = sim.t;
-    ku.uAssemble.value = clamp((descent - 0.55) / 0.35, 0, 1);
+    ku.uAssemble.value = clamp((descent - 0.42) / 0.38, 0, 1);
     (ku.uEye.value as Vector3).copy(eye);
 
     const lu = built.lastMat.uniforms;
-    lu.uPresence.value = show * clamp((descent - 0.88) / 0.1, 0, 1) * sim.still;
+    lu.uPresence.value = show * clamp((descent - 0.9) / 0.08, 0, 1) * sim.still;
     lu.uStill.value = sim.still;
     lu.uTime.value = sim.t;
     (lu.uEye.value as Vector3).copy(eye);

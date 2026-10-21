@@ -72,8 +72,11 @@ export const MODULES: readonly ModuleDef[] = [
     says: 'Everything is put down. What is left is residue, negative space and one drawn figure.',
     travel: 48,
     span: 15,
-    radius: 13,
-    pitch: 4,
+    // this place is about looking at what has been put down, so it
+    // looks down at it: at 4 degrees the floor and everything on it
+    // fell below the frame and the top two thirds were empty
+    radius: 12,
+    pitch: 13,
   },
   {
     id: 'deep',
