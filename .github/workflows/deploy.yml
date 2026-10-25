@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+# Every push to main is checked, built and published. A pull request is
+# checked and built but never published.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push replaces one still waiting, but an
+# in-flight deploy is allowed to finish rather than being cut off halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The two checks that can run without a GPU. The end-to-end suite
+      # needs a browser and, for the frame-rate project, a real graphics
+      # card, so it stays a local command (npm run test:e2e).
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        run: npx vite build
+
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
